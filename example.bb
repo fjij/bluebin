@@ -1,6 +1,8 @@
 This is an example bluebin file!
+%[My Component]
+%[My Component](100, 200)
 
-[My Component]
+ [My Component]
 x: 1
 y: 2
 

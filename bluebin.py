@@ -9,6 +9,7 @@
 
 import sys
 import os
+import re
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # Classes                                                                     #
@@ -43,20 +44,16 @@ def is_code(line):
     return line.startswith('    ') or line.startswith('\t')
 
 def is_lid(line):
-    return not is_code(line) and line.strip().startswith('[') and line.strip().endswith(']')
+    return re.search(r'^( {0,3}\[(\w| )*\] *)$', line) is not None
 
 def lid_name(line):
-    return line[1:-1].strip()
+    return line.strip()[1:-1].strip()
 
 def create_component(name):
     return {'name': name, 'properties': {}, 'content': ''}
 
 def is_property(line):
-    prev = ''
-    for c in line:
-        if c == ':' and prev != '\\':
-            return True
-    return False
+    return re.search(r'^((\w| )*(\s)*:.*)', line) is not None
 
 def parse_property(line):
     return list(map(lambda s: s.strip(), line.split(':', 1)))
@@ -78,10 +75,43 @@ def identify_components(in_str):
             components[-1]['content'] += line + '\n'
     return components
 
+def csub_name(csub):
+    return csub.group(1).split(']')[0][1:].strip()
+
+def find_component(name, components):
+    for x in range(len(components)):
+        if components[x]['name'] == name:
+            return components[x], components[x+1:]
+    return None, None
+
+def replace_csubs(line, other_components):
+    start_at = 0
+    while True:
+        csub = re.search(r'%(\[(\w| )*\](\s*\(\s*(((\w| )*:){0,1}\s*(".*"|(\w| )*))(\s*,\s*(((\w| )*:){0,1}\s*(".*"|(\w| )*)))*\s*\)){0,1})', line[start_at:])
+        if csub is None:
+            break
+        a, b = csub.span()
+        a += start_at
+        b += start_at
+        c, c_nexts = find_component(csub_name(csub), other_components)
+        if c is not None:
+            content = render_component(c, c_nexts)
+            line = line[:a] + content + line [b:]
+        start_at = b
+    return line
+
+def render_line(line, component, other_components):
+    line = replace_csubs(line, other_components)
+    return line
+
+def render_component(component, other_components):
+    return '\n'.join(list(render_line(line, component, other_components) for line in component['content'].splitlines()))
+    
+
 def bluebin(in_str):
     components = identify_components(in_str)
     print(components)
-
+    print(render_component(components[0], components[1:]))
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # Main                                                                        #
