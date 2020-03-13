@@ -78,6 +78,44 @@ def identify_components(in_str):
 def csub_name(csub):
     return csub.group(1).split(']')[0][1:].strip()
 
+def csub_args(csub):
+    if csub.group(3) is None:
+        return None, None
+    full_str = csub.group(3).strip()[1:-1] + ','
+    arg_strs = []
+    start = 0
+    in_qts = False
+    for x in range(len(full_str)):
+        c = full_str[x] 
+        if c == '"':
+            in_qts = not in_qts
+        if not in_qts and c == ',':
+            arg_strs.append(full_str[start:x])
+            start = x + 1
+    pos_args = []
+    kw_args = {}
+    for arg_str in arg_strs:
+        in_qts = False
+        kw_arg = False
+        name = ''
+        value = arg_str.strip()
+        for x in range(len(arg_str)):
+            c = arg_str[x] 
+            if c == '"':
+                in_qts = not in_qts
+            if not in_qts and c == ':':
+                kw_arg = True
+                name = arg_str[:x].strip()
+                value = arg_str[x+1:].strip()
+                break
+        if '"' in value:
+            value = value[1:-1]
+        if kw_arg:
+            kw_args[name] = value
+        else:
+            pos_args.append(value)
+    return pos_args, kw_args
+
 def find_component(name, components):
     for x in range(len(components)):
         if components[x]['name'] == name:
@@ -95,6 +133,8 @@ def replace_csubs(line, other_components):
         b += start_at
         c, c_nexts = find_component(csub_name(csub), other_components)
         if c is not None:
+            pos_args, kw_args = csub_args(csub)
+            print(pos_args, kw_args)
             content = render_component(c, c_nexts)
             line = line[:a] + content + line [b:]
         start_at = b

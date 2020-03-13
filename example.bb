@@ -1,6 +1,7 @@
 This is an example bluebin file!
 %[My Component]
 %[My Component](100, 200)
+%[My Component](y: 100, x: "200:)")
 
  [My Component]
 x: 1
