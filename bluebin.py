@@ -141,6 +141,8 @@ def replace_csubs(line, other_components):
     return line
 
 def render_line(line, component, other_components):
+    if is_code(line):
+        return line
     line = replace_csubs(line, other_components)
     return line
 
