@@ -175,7 +175,8 @@ def replace_prefs(line, component, pos_args, kw_args):
         end += offset
         if pref_name(pref) in properties:
             line = line[:start] + properties[pref_name(pref)] + line [end:]
-        offset = end
+        # allows us to get every possible interpretation of % pairs
+        offset = start + 1 
     return line
 
 def render_line(line, component, other_components, pos_args, kw_args):
