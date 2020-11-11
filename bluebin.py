@@ -141,7 +141,6 @@ def replace_csubs(line, other_components):
         c, c_nexts = find_component(csub_name(csub), other_components)
         if c is not None:
             pos_args, kw_args = csub_args(csub)
-            #print("pos_args, kw_args", pos_args, kw_args)
             content = render_component(c, c_nexts, pos_args, kw_args)
             line = line[:start] + content + line [end:]
         offset = end
@@ -192,8 +191,8 @@ def render_component(component, other_components, pos_args=[], kw_args={}):
 
 def bluebin(in_str):
     components = identify_components(in_str)
-    print(components)
-    print(render_component(components[0], components[1:]))
+    # components[0] is the root component
+    return render_component(components[0], components[1:])
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # Main                                                                        #
@@ -202,8 +201,12 @@ def bluebin(in_str):
 if __name__ == '__main__':
     try:
         input_file, output_file = parse_args()
-        with open(input_file, 'r') as f:
-            bluebin(f.read())
+        fin = open(input_file, 'r')
+        output = bluebin(fin.read())
+        fin.close()
+        fout = open(output_file, 'w')
+        fout.write(output)
+        fout.close()
     except Exception as e:
         print('\nERROR: ' + str(e))
         show_help()
