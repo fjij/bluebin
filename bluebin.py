@@ -80,7 +80,7 @@ def csub_name(csub):
 
 def csub_args(csub):
     if csub.group(3) is None:
-        return None, None
+        return [], {}
     full_str = csub.group(3).strip()[1:-1] + ','
     arg_strs = []
     start = 0
@@ -122,32 +122,71 @@ def find_component(name, components):
             return components[x], components[x+1:]
     return None, None
 
+def find_csub(text):
+    csub = re.search(r'%(\[(\w| )*\](\s*\(\s*(((\w| )*:){0,1}\s*(".*"|(\w| )*))(\s*,\s*(((\w| )*:){0,1}\s*(".*"|(\w| )*)))*\s*\)){0,1})', text)
+    if csub is None:
+        return None, None, None
+    start, end = csub.span()
+    return csub, start, end
+
+# replaces component calls with component contents in a line
 def replace_csubs(line, other_components):
-    start_at = 0
+    offset = 0
     while True:
-        csub = re.search(r'%(\[(\w| )*\](\s*\(\s*(((\w| )*:){0,1}\s*(".*"|(\w| )*))(\s*,\s*(((\w| )*:){0,1}\s*(".*"|(\w| )*)))*\s*\)){0,1})', line[start_at:])
+        csub, start, end = find_csub(line[offset:])
         if csub is None:
             break
-        a, b = csub.span()
-        a += start_at
-        b += start_at
+        start += offset
+        end += offset
         c, c_nexts = find_component(csub_name(csub), other_components)
         if c is not None:
             pos_args, kw_args = csub_args(csub)
-            print(pos_args, kw_args)
-            content = render_component(c, c_nexts)
-            line = line[:a] + content + line [b:]
-        start_at = b
+            #print("pos_args, kw_args", pos_args, kw_args)
+            content = render_component(c, c_nexts, pos_args, kw_args)
+            line = line[:start] + content + line [end:]
+        offset = end
     return line
 
-def render_line(line, component, other_components):
+def find_pref(text):
+    pref = re.search(r'%.+?%', text)
+    if pref is None:
+        return None, None, None
+    start, end = pref.span()
+    return pref, start, end
+
+def pref_name(pref):
+    return pref.group(0)[1:-1].strip()
+
+def replace_prefs(line, component, pos_args, kw_args):
+    if component['properties'] == None:
+        return line
+    # override properties if needed
+    properties = {**component['properties'], **kw_args}
+    keys = list(properties.keys())
+    for x in range(min(len(keys), len(pos_args))):
+        properties[keys[x]] = pos_args[x]
+    # replace all occurrences that fit the given criteria
+    offset = 0
+    while True:
+        pref, start, end = find_pref(line[offset:])
+        if pref is None:
+            break
+        start += offset
+        end += offset
+        if pref_name(pref) in properties:
+            line = line[:start] + properties[pref_name(pref)] + line [end:]
+        offset = end
+    return line
+
+def render_line(line, component, other_components, pos_args, kw_args):
     if is_code(line):
         return line
+    line = replace_prefs(line, component, pos_args, kw_args)
     line = replace_csubs(line, other_components)
     return line
 
-def render_component(component, other_components):
-    return '\n'.join(list(render_line(line, component, other_components) for line in component['content'].splitlines()))
+def render_component(component, other_components, pos_args=[], kw_args={}):
+    return '\n'.join(list(render_line(line, component, other_components, pos_args, kw_args) for line in component['content'].splitlines()))
     
 
 def bluebin(in_str):
