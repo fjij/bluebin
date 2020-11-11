@@ -4,6 +4,9 @@ Markdown with reusable components!
 ## Goal
 Bluebin markdown flavour that features reusable components that make complex designs easier. Bluebin projects are meant to be rendered, but should still be legible in their original form.
 
+## Usage
+	python3 bluebin.py input_file.bb output_file.md
+
 ## The Basics
 Most basic markdown is valid in Bluebin. This includes headers, lists, emphasis, links, images, and code. See the [original spec](https://daringfireball.net/projects/markdown/basics) for more info.
 
@@ -64,6 +67,3 @@ Reusing a component allows you to use the same content in multiple places. You c
 
 ### Default components and component order
 If your bluebin file only contains components, the first component will be displayed by default. If there is markdown before the first component, this markdown will be displayed instead. Best practice is to only reuse components that have been defined **below** the current line, though it is not required. Reusing a component within itself is undefined behavior and results will depend on the implementation.
-
-## Implementations
-I am currently working on a python implementation of Bluebin that will convert Bluebin files into regular markdown.
